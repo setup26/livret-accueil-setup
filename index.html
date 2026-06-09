@@ -268,6 +268,79 @@ textarea.ti{resize:vertical;min-height:55px}
   .debrief-block     { margin-top: 0 !important; }
 }
 
+
+
+/* ══ CORRECTIF MOBILE V5 — affichage pleine largeur téléphone ═════════════ */
+html, body {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  margin: 0 !important;
+}
+body { min-width: 0 !important; }
+* { max-width: 100%; }
+img, video, canvas, table, input, textarea, select, button {
+  max-width: 100% !important;
+}
+/* Ancienne page d'attestation statique en bas du fichier : on la masque à l'écran.
+   Elle créait une largeur énorme sur mobile, d'où le site minuscule à gauche. */
+body > .page { display: none !important; }
+
+.section, .qsec, .submit-area {
+  width: min(980px, calc(100% - 24px)) !important;
+  max-width: 980px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+#lecture-progress {
+  width: 100% !important;
+  max-width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 700px) {
+  body { font-size: 14px !important; }
+  .header { padding: 20px 12px 12px !important; }
+  .header h1 { font-size: 18px !important; line-height: 1.25 !important; }
+  .header .sub, .band { font-size: 11px !important; }
+  .section, .qsec, .submit-area {
+    width: calc(100% - 12px) !important;
+    max-width: calc(100% - 12px) !important;
+    margin: 6px auto !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+  }
+  .sb, .qb { padding: 11px 10px !important; }
+  .q { padding: 11px 10px !important; margin-bottom: 10px !important; }
+  .qtxt { font-size: 13px !important; }
+  .opts label { font-size: 13px !important; line-height: 1.45 !important; }
+  .id-grid { grid-template-columns: 1fr !important; gap: 5px !important; }
+  .id-grid strong { white-space: normal !important; margin-top: 6px !important; }
+  .ti { font-size: 14px !important; padding: 9px 10px !important; }
+  .gtbl { display: block !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
+  .gtbl table, table.gtbl { width: 100% !important; }
+  .gtbl th, .gtbl td { font-size: 12px !important; padding: 6px !important; }
+  .img-row, .img-row2 { display: block !important; }
+  .img-row img, .img-row2 img { width: auto !important; max-width: 100% !important; margin: 8px auto !important; display: block !important; }
+  .sig-grid, .attest-sigs { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .sig-canvas { height: 150px !important; width: 100% !important; }
+  #attest-modal.open { padding: 8px 4px !important; align-items: flex-start !important; }
+  #attest-inner { width: calc(100% - 8px) !important; max-width: calc(100% - 8px) !important; padding: 14px 10px !important; }
+  .attest-table, .attest-table tbody, .attest-table tr, .attest-table td { display: block !important; width: 100% !important; }
+  .attest-table td:first-child { width: 100% !important; }
+  #btn-submit-qcm, #btn-attestation, #btn-email, #btn-archive-manuel, .attest-print-btn {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 13px 10px !important;
+    font-size: 14px !important;
+  }
+  .att-btn-row { flex-direction: column !important; align-items: stretch !important; }
+  #cfg-gear { bottom: 14px !important; right: 14px !important; }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -1074,6 +1147,7 @@ QCM — Questions Sécurité</h2></div>
 
   <!-- SCORE PANEL -->
   <div id="qcm-score" style="display:none;background:#015579;color:white;border-radius:8px;padding:20px;margin:16px 0;text-align:center"></div>
+  <div id="archive-auto-status" style="display:none;margin:10px 0;padding:10px 12px;border-radius:6px;background:#e6f2f7;border:1px solid #9cc8da;color:#015579;font-size:12px;text-align:center;line-height:1.5"></div>
 
   <!-- SUBMIT BUTTON -->
   <div style="text-align:center;padding:16px 0 8px">
@@ -1089,19 +1163,16 @@ QCM — Questions Sécurité</h2></div>
           <button id="btn-attestation" type="button" onclick="genererAttestation()" style="background:#ef7d01;color:white;border:none;padding:14px 28px;font-size:14px;font-weight:700;border-radius:8px;cursor:pointer;box-shadow:0 3px 10px rgba(239,125,1,.35)">
             📄 Voir l'attestation
           </button>
-          <button id="btn-email" type="button" onclick="envoyerAttestation()" style="background:#015579;color:white;border:none;padding:14px 28px;font-size:14px;font-weight:700;border-radius:8px;cursor:pointer;box-shadow:0 3px 10px rgba(1,85,121,.3)">
-            📧 Envoyer par mail
+          <button id="btn-email" type="button" onclick="archiverAttestation()" id="btn-archive-manuel" style="background:#015579;color:white;border:none;padding:14px 28px;font-size:14px;font-weight:700;border-radius:8px;cursor:pointer;box-shadow:0 3px 10px rgba(1,85,121,.3)">
+            💾 Archiver manuellement
           </button>
         </div>
         <p style="font-size:11px;color:#888;text-align:center;line-height:1.6;max-width:420px">
           📄 <em>Générer</em> → ouvre l'attestation dans un nouvel onglet (imprimable / exportable PDF)<br>
-          📧 <em>Envoyer</em> → envoie automatiquement au responsable SSE
+          💾 <em>Archivage</em> → se lance automatiquement après validation du QCM et signatures
         </p>
         <div style="background:#fff8e1;border:1px solid #f0ad4e;border-radius:6px;padding:10px 14px;font-size:11px;color:#7d5a00;max-width:420px;text-align:left;line-height:1.6">
-          ⚙️ <strong>Pour activer l'envoi automatique :</strong><br>
-          1. Créer un compte gratuit sur <a href="https://www.emailjs.com" target="_blank" style="color:#015579">emailjs.com</a><br>
-          2. Renseigner les 3 clés EmailJS dans le code HTML (variable EMAILJS_CONFIG)<br>
-          3. Sans configuration : le client mail s'ouvre avec les infos pré-remplies
+          ℹ️ <strong>Archivage automatique :</strong><br>Après validation du QCM et signatures, le résultat est envoyé dans Google Sheets et l'attestation est créée dans Google Drive. Le bouton reste disponible en secours si besoin.
         </div>
       </div>
     </div>
@@ -1467,6 +1538,7 @@ function submitQCM() {
   if (ab) ab.style.display='flex';
   try{if(sd) sd.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){if(sd) sd.scrollIntoView(false);}
   afficherDestinataires();
+  setTimeout(function(){ tenterArchivageAuto('qcm'); }, 500);
 }
 function _lsGet(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
 function _lsSet(k,v) { try { localStorage.setItem(k,v); } catch(e) {} }
@@ -2065,6 +2137,82 @@ function archiverAttestation() {
   });
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════
+// ARCHIVAGE AUTOMATIQUE — après QCM validé + signatures
+// ═══════════════════════════════════════════════════════════════════════
+var AUTO_ARCHIVE_DONE = false;
+var AUTO_ARCHIVE_RUNNING = false;
+
+function setArchiveStatus(msg, type) {
+  var el = document.getElementById('archive-auto-status');
+  if (!el) return;
+  el.style.display = 'block';
+  el.textContent = msg;
+  if (type === 'ok') {
+    el.style.background = '#eaf7f0'; el.style.borderColor = '#82e0aa'; el.style.color = '#1a7a45';
+  } else if (type === 'err') {
+    el.style.background = '#fff5f5'; el.style.borderColor = '#f1948a'; el.style.color = '#922b21';
+  } else {
+    el.style.background = '#e6f2f7'; el.style.borderColor = '#9cc8da'; el.style.color = '#015579';
+  }
+}
+
+function signaturesOkPourArchivage() {
+  var s1 = typeof getSigDataUrl === 'function' ? getSigDataUrl('sig-salarie') : null;
+  var s2 = typeof getSigDataUrl === 'function' ? getSigDataUrl('sig-animateur') : null;
+  return !!(s1 && s2);
+}
+
+function conditionsArchivageAuto() {
+  if (!submitted) return { ok:false, msg:'Archivage automatique en attente : QCM non validé.' };
+  var payload = buildArchivePayload();
+  if (!payload.nom || payload.nom.indexOf('___') >= 0) return { ok:false, msg:'Archivage automatique en attente : nom/prénom à renseigner.' };
+  if (!payload.tuteur || payload.tuteur.indexOf('___') >= 0) return { ok:false, msg:'Archivage automatique en attente : tuteur/animateur à renseigner.' };
+  if (!signaturesOkPourArchivage()) return { ok:false, msg:'Archivage automatique en attente : signatures salarié et animateur à compléter.' };
+  return { ok:true, payload: payload };
+}
+
+function tenterArchivageAuto(source) {
+  if (AUTO_ARCHIVE_DONE || AUTO_ARCHIVE_RUNNING) return;
+  if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.indexOf('COLLER_ICI') >= 0) return;
+
+  var c = conditionsArchivageAuto();
+  if (!c.ok) {
+    if (submitted) setArchiveStatus(c.msg, 'info');
+    return;
+  }
+
+  AUTO_ARCHIVE_RUNNING = true;
+  setArchiveStatus('Archivage automatique en cours...', 'info');
+
+  try { genererAttestation(); } catch(e) {}
+
+  var body = new URLSearchParams();
+  body.append('payload', JSON.stringify(c.payload));
+
+  fetch(GOOGLE_APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'cors',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+    body: body.toString()
+  })
+  .then(function(r){ return r.text(); })
+  .then(function(txt){
+    var data = {};
+    try { data = JSON.parse(txt); } catch(e) { throw new Error('Réponse illisible du serveur : ' + txt); }
+    if (!data.ok) throw new Error(data.message || 'Erreur inconnue côté Google Apps Script');
+    AUTO_ARCHIVE_DONE = true;
+    setArchiveStatus('Archivage automatique réussi : ligne ajoutée dans Google Sheets et attestation enregistrée dans Google Drive.', 'ok');
+  })
+  .catch(function(err){
+    setArchiveStatus("Archivage automatique non abouti. Utilise le bouton d'archivage manuel ou vérifie la connexion. Détail : " + err.message, 'err');
+  })
+  .finally(function(){
+    AUTO_ARCHIVE_RUNNING = false;
+  });
+}
+
 // Correction instantanée robuste : si le fichier contient déjà des fonctions live,
 // on les déclenche sans casser l'existant.
 function activerCorrectionsInstantaneesRobustes() {
@@ -2077,6 +2225,7 @@ function activerCorrectionsInstantaneesRobustes() {
       try { if (typeof updateAttestation === 'function') updateAttestation(); } catch(e) {}
       try { if (typeof liveCheck === 'function') liveCheck(el); } catch(e) {}
       try { if (typeof updateProgressBar === 'function') updateProgressBar(); } catch(e) {}
+      try { if (typeof tenterArchivageAuto === 'function') tenterArchivageAuto('input'); } catch(e) {}
     });
   });
 }
