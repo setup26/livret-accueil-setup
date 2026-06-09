@@ -1223,7 +1223,7 @@ QCM — Questions Sécurité</h2></div>
 </div>
 
 <div class="submit-area">
-  <button class="submit-btn" onclick="alert('Formulaire validé !\n\nMerci d\'avoir complété le livret d\'accueil sécurité SET UP.\nVeuillez signer physiquement le document avec votre tuteur.')">✅ Valider et soumettre le livret d'accueil</button>
+  <button id="btn-finaliser-livret" class="submit-btn" type="button" onclick="finaliserEtArchiverLivret()">✅ Valider et soumettre le livret d'accueil</button>
   <p class="version"> — SET UP · Politique SSE</p>
 </div>
 
@@ -2135,6 +2135,59 @@ function archiverAttestation() {
   .finally(function(){
     archiveButtons.forEach(function(b){ b.disabled = false; b.innerHTML = '💾 Archiver dans Google Sheet / Drive'; });
   });
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// VALIDATION FINALE — bouton "Valider et soumettre le livret d'accueil"
+// ═══════════════════════════════════════════════════════════════════════
+function finaliserEtArchiverLivret() {
+  var btn = document.getElementById('btn-finaliser-livret');
+  var oldText = btn ? btn.innerHTML : '';
+
+  try {
+    if (btn) { btn.disabled = true; btn.innerHTML = 'Validation et archivage en cours...'; }
+
+    // 1) Vérifie que le livret a bien été lu, si le contrôle existe.
+    if (typeof verifierLecture === 'function') {
+      var lectureOk = verifierLecture();
+      if (!lectureOk) {
+        if (btn) { btn.disabled = false; btn.innerHTML = oldText; }
+        return;
+      }
+    }
+
+    // 2) Valide le QCM si ce n'est pas déjà fait.
+    // La fonction submitQCM calcule le score, affiche les corrections et prépare l'attestation.
+    if (!submitted && typeof submitQCM === 'function') {
+      submitQCM();
+    }
+
+    // 3) Laisse le temps au score / à l'attestation de se mettre à jour, puis archive.
+    setTimeout(function(){
+      var c = (typeof conditionsArchivageAuto === 'function') ? conditionsArchivageAuto() : { ok:false, msg:'Fonction d’archivage automatique introuvable.' };
+
+      if (!c.ok) {
+        if (typeof setArchiveStatus === 'function') setArchiveStatus(c.msg, 'info');
+        alert(c.msg + "\n\nL'archivage sera lancé dès que les informations manquantes seront complétées, ou via le bouton d'archivage manuel.");
+        if (btn) { btn.disabled = false; btn.innerHTML = oldText; }
+        return;
+      }
+
+      if (typeof tenterArchivageAuto === 'function') {
+        tenterArchivageAuto('bouton-finaliser');
+      } else if (typeof archiverAttestation === 'function') {
+        archiverAttestation();
+      }
+
+      if (btn) { btn.innerHTML = '✅ Livret validé et archivage lancé'; }
+      setTimeout(function(){ if (btn) { btn.disabled = false; btn.innerHTML = oldText; } }, 2500);
+    }, 700);
+
+  } catch (err) {
+    alert('La validation / archivage n’a pas abouti.\n\nDétail : ' + (err && err.message ? err.message : err));
+    if (btn) { btn.disabled = false; btn.innerHTML = oldText; }
+  }
 }
 
 
