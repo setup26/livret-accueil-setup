@@ -341,61 +341,6 @@ body > .page { display: none !important; }
   #cfg-gear { bottom: 14px !important; right: 14px !important; }
 }
 
-
-/* ══ V7 — Verrouillage QCM + signature tuteur papier ═════════════ */
-.q.locked-qcm {
-  opacity: 0.96;
-  border-color: #d7e8ef !important;
-  background: #fbfdfe !important;
-}
-.q.locked-qcm input,
-.q.locked-qcm select,
-.q.locked-qcm textarea {
-  pointer-events: none !important;
-}
-.q.locked-qcm label {
-  cursor: default !important;
-}
-.locked-note-qcm {
-  margin-top: 8px;
-  padding: 7px 10px;
-  border-radius: 5px;
-  background: #e6f2f7;
-  color: #015579;
-  font-size: 11px;
-  border-left: 3px solid #015579;
-}
-.tuteur-signature-papier {
-  border: 2px dashed #bbb;
-  border-radius: 8px;
-  min-height: 130px;
-  background: #fafafa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #777;
-  font-size: 12px;
-  text-align: center;
-  padding: 12px;
-}
-
-
-/* ══ CORRECTIF V9 — bouton final unique sans toucher aux boutons de lecture ═════════════ */
-#btn-submit-qcm,
-#att-buttons {
-  display: none !important;
-}
-#bloc-validation-unique-info {
-  background:#e6f2f7;
-  border-left:4px solid #015579;
-  padding:10px 12px;
-  border-radius:0 6px 6px 0;
-  font-size:12px;
-  color:#015579;
-  line-height:1.6;
-  margin:10px 0 12px;
-}
-
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -1210,7 +1155,7 @@ QCM — Questions Sécurité</h2></div>
       📋 Valider et noter mon QCM
     </button>
 <div id="qcm-warning" style="margin-top:8px;padding:8px 12px;border-radius:6px;background:#fff3cd;border:1px solid #ffc107;font-size:12px;color:#856404;text-align:center">&#x26A0;&#xFE0F; Lisez et validez chaque thème du livret avant de commencer le QCM</div>
-    <p style="font-size:11px;color:#888;margin-top:8px">Le QCM sera évalué automatiquement au moment de la validation finale du livret.</p>
+    <p style="font-size:11px;color:#888;margin-top:8px">Vos réponses seront évaluées et les corrections affichées après validation.</p>
     <div style="margin-top:14px">
       <div id="att-buttons" style="display:none;flex-direction:column;align-items:center;gap:10px;width:100%">
         <div id="mail-dest-info" style="font-size:11px;color:#888;text-align:center;padding:4px 8px;background:#f5f5f5;border-radius:5px;width:100%;box-sizing:border-box"></div>
@@ -1264,8 +1209,13 @@ QCM — Questions Sécurité</h2></div>
       </div>
       <div>
         <p style="font-weight:700;font-size:13px;margin-bottom:6px">ANIMATEUR / TUTEUR — Signature :</p>
-        <div class="tuteur-signature-papier">
-          Signature du tuteur à compléter après impression de l'attestation.
+        <p style="font-size:12px;color:#777;margin-bottom:5px">Fonction : <input class="ti" id="animateur-fonction" placeholder="Ex: Responsable travaux" style="display:inline;width:170px;padding:4px 8px;margin-top:0"></p>
+        <div class="sig-pad-wrap">
+          <canvas id="sig-animateur" class="sig-canvas"></canvas>
+          <div class="sig-toolbar">
+            <span class="sig-hint"><span class="sig-hint-icon">✍️</span> Signez avec le doigt ou la souris</span>
+            <button class="sig-btn" onclick="clearSigPad('sig-animateur')">✕ Effacer</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1273,7 +1223,7 @@ QCM — Questions Sécurité</h2></div>
 </div>
 
 <div class="submit-area">
-  <button id="btn-finaliser-livret" class="submit-btn" type="button" onclick="finaliserEtArchiverLivret()">✅ Valider le livret, noter le QCM et archiver</button>
+  <button id="btn-finaliser-livret" class="submit-btn" type="button" onclick="finaliserEtArchiverLivret()">✅ Valider et soumettre le livret d'accueil</button>
   <p class="version"> — SET UP · Politique SSE</p>
 </div>
 
@@ -1396,56 +1346,6 @@ function updateProgressBar() {
   pb.style.background = (answered>0 && correct/answered>=0.8) ? '#015579' : (correct/answered>=0.6 ? '#ef7d01' : '#e74c3c');
   if (pt) pt.textContent = answered + ' / ' + TOTAL_QUESTIONS + ' \u00e9l\u00e9ments r\u00e9pondus \u2014 ' + correct + ' correct(s)';
 }
-
-function verrouillerQuestion(qId) {
-  var q = document.getElementById('q-' + qId);
-  if (!q) return;
-
-  var controls = q.querySelectorAll('input, select, textarea, button.sbtn');
-  for (var i = 0; i < controls.length; i++) {
-    controls[i].disabled = true;
-  }
-
-  q.classList.add('locked-qcm');
-
-  if (!q.querySelector('.locked-note-qcm')) {
-    var note = document.createElement('div');
-    note.className = 'locked-note-qcm';
-    note.innerHTML = '🔒 Réponse verrouillée après validation.';
-    q.appendChild(note);
-  }
-}
-
-function verrouillerQuestionSimple(qId) {
-  if (qId === 'd' || qId === 'd2') {
-    if (getVal('ti-d1') && getVal('ti-d2')) verrouillerQuestion('d');
-    return;
-  }
-  if (qId === 'd1') {
-    if (getVal('ti-d1') && getVal('ti-d2')) verrouillerQuestion('d');
-    return;
-  }
-  verrouillerQuestion(qId);
-}
-
-function qcmFComplet() {
-  var ids = ['ti-fa','ti-fb','ti-fc','ti-fd','ti-fe','ti-fval'];
-  for (var i = 0; i < ids.length; i++) {
-    var v = getVal(ids[i]);
-    if (!v || v === '-- Choisir --' || v === '—' || v === '--') return false;
-  }
-  return true;
-}
-
-function verrouillerToutQCM() {
-  var qs = document.querySelectorAll('.qsec .q');
-  for (var i = 0; i < qs.length; i++) {
-    if (qs[i].id && qs[i].id.indexOf('q-') === 0) {
-      verrouillerQuestion(qs[i].id.substring(2));
-    }
-  }
-}
-
 function liveCheck(qId, key, val) {
   var a = ANSWERS[key]; if (!a) return;
   var v = (val||'').trim();
@@ -1462,7 +1362,6 @@ function liveCheck(qId, key, val) {
     : '\u274C <strong style="color:#c0392b">Mauvaise r\u00e9ponse</strong> \u2014 R\u00e9ponse attendue\u00a0: <em style="color:#c0392b">' + a.correct + '</em><br><span style="font-size:12px;color:#7b241c">' + a.expl + '</span>';
   q.appendChild(div);
   updateProgressBar();
-  verrouillerQuestionSimple(qId);
 }
 function validerTexte(qId, key, inputId) {
   var val = getVal(inputId);
@@ -1494,7 +1393,6 @@ function liveCheckE() {
   div.style.cssText='margin-top:8px;padding:10px 14px;border-radius:7px;font-size:13px;line-height:1.7;border-left:4px solid '+(allOk?'#27ae60':!diff?'#f39c12':'#e74c3c')+';background:'+(allOk?'#eaf7f0':'#fff5f5');
   div.innerHTML=allOk?'\u2705 <strong style="color:#1a7a45">Correct\u00a0!</strong><br>Une corde de travail + une corde de s\u00e9curit\u00e9.':(!diff?'\u26A0 Les deux cordes doivent \u00eatre diff\u00e9rentes.':'\u274C <strong style="color:#c0392b">Incorrect</strong> \u2014 Attendu\u00a0: corde de travail + corde de s\u00e9curit\u00e9.');
   q.appendChild(div); updateProgressBar();
-  verrouillerQuestion('e');
 }
 function liveFCheck() {
   var ids=['ti-fa','ti-fb','ti-fc','ti-fd','ti-fe'];
@@ -1513,7 +1411,6 @@ function liveFCheck() {
   var detail=results.map(function(ok,i){ return (ok?'\u2705 ':'\u274C ')+labels[i]+': '+names[i]; }).join('  ');
   div.innerHTML=(nOk===5?'<strong style="color:#1a7a45">\u2705 Les 5 \u00e9l\u00e9ments sont corrects\u00a0!</strong>':'<strong style="color:#c0392b">\u274C '+nOk+'/5 correct</strong>')+'<br>'+detail;
   q.appendChild(div); updateProgressBar();
-  if (qcmFComplet()) verrouillerQuestion('f');
 }
 function liveFValCheck(val) {
   if (!val||val==='-- Choisir --') return;
@@ -1536,7 +1433,6 @@ function liveFValCheck(val) {
     ?'\u2705 <strong style="color:#1a7a45">Bonne r\u00e9ponse\u00a0!</strong> Valeur minimale\u00a0: <strong>6,5\u00a0m</strong> <em style="font-size:11px;color:#555">(6\u00a0m, 6,5\u00a0m et 7\u00a0m accept\u00e9s)</em><br><strong style="color:#015579;font-size:12px">Detail du calcul\u00a0:</strong>'+expl
     :'\u274C <strong style="color:#c0392b">Incorrect</strong> \u2014 Valeur minimale\u00a0: <em>6,5\u00a0m</em><br><strong style="color:#015579;font-size:12px">Rappel du calcul\u00a0:</strong>'+expl;
   q.appendChild(div); updateProgressBar();
-  if (qcmFComplet()) verrouillerQuestion('f');
 }
 function liveCheckL() {
   var sec=getVal('sel-secourir'), ale=getVal('sel-alerter'), pro=getVal('sel-proteger');
@@ -1552,7 +1448,6 @@ function liveCheckL() {
     +'<strong>2 ALERTER</strong> : appeler les secours (18 / 15 / 112).<br>'
     +'<strong>3 SECOURIR</strong> : premiers soins.';
   q.appendChild(div); updateProgressBar();
-  verrouillerQuestion('l');
 }
 function liveCheckO() {
   var ra=document.querySelector('input[name="qoa"]:checked');
@@ -1574,7 +1469,6 @@ function liveCheckO() {
     +'<strong style="color:#ef7d01">B \u2014 Facteur 1 '+(okB?'\u2705':'\u274C('+vb+')')+'</strong> : niveau du torse.<br>'
     +'<strong style="color:#c0392b">C \u2014 Facteur 2 '+(okC?'\u2705':'\u274C('+vc+')')+'</strong> : niveau des pieds. <strong>A EVITER.</strong>';
   q.appendChild(div); updateProgressBar();
-  verrouillerQuestion('oa');
 }
 function showFB(qId, ok, key) {
   var q=document.getElementById('q-'+qId); if (!q) return;
@@ -1642,10 +1536,9 @@ function submitQCM() {
   if (btn) { btn.textContent='\u2705 QCM valide'; btn.disabled=true; btn.style.opacity='0.6'; }
   var ab=document.getElementById('att-buttons');
   if (ab) ab.style.display='flex';
-  verrouillerToutQCM();
   try{if(sd) sd.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){if(sd) sd.scrollIntoView(false);}
   afficherDestinataires();
-  // V9 : archivage lancé uniquement par le bouton final unique.
+  setTimeout(function(){ tenterArchivageAuto('qcm'); }, 500);
 }
 function _lsGet(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
 function _lsSet(k,v) { try { localStorage.setItem(k,v); } catch(e) {} }
@@ -1888,6 +1781,7 @@ function genererAttestation() {
     : 'Toutes les réponses sont correctes.';
 
   var sigSal  = getSigDataUrl('sig-salarie')   || null;
+  var sigAnim = getSigDataUrl('sig-animateur') || null;
 
   // Score display
   var scoreDisplay = submitted
@@ -1937,10 +1831,13 @@ function genererAttestation() {
         : '<div style="border:1px dashed #ccc;border-radius:4px;height:60px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:11px;margin:6px 0">✍️ Signature non encore apposée</div>')
     + '</div>'
 
-    // Animateur / tuteur : signature papier après impression
+    // Animateur
     + '<div class="attest-sig">'
-    + '<div class="attest-sig-lbl">ANIMATEUR / TUTEUR — ' + fd.tuteur + '</div>'
-    + '<div style="border:1px dashed #999;border-radius:4px;height:70px;display:flex;align-items:center;justify-content:center;color:#777;font-size:11px;margin:6px 0;text-align:center">Signature à compléter après impression</div>'
+    + '<div class="attest-sig-lbl">ANIMATEUR — ' + fd.tuteur + '</div>'
+    + (fd.fonctAnim ? '<div style="font-size:10px;color:#777;margin:2px 0">Fonction : ' + fd.fonctAnim + '</div>' : '')
+    + (sigAnim
+        ? '<img src="' + sigAnim + '" style="max-width:100%;max-height:75px;display:block;margin:4px 0">'
+        : '<div style="border:1px dashed #ccc;border-radius:4px;height:60px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:11px;margin:6px 0">✍️ Signature non encore apposée</div>')
     + '</div>'
     + '</div>'
 
@@ -2128,7 +2025,7 @@ function getMentionArchivage(pct) {
 
 function buildAttestationHtmlPourArchivage(payload) {
   var sigSal = payload.signatureSalarie ? '<img src="' + payload.signatureSalarie + '" style="max-width:260px;max-height:90px;display:block;margin:8px auto">' : '<div style="height:70px;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;color:#999">Signature non renseignée</div>';
-  var sigAnim = '<div style="height:70px;border:1px dashed #999;display:flex;align-items:center;justify-content:center;color:#777;text-align:center">Signature du tuteur à compléter après impression</div>';
+  var sigAnim = payload.signatureAnimateur ? '<img src="' + payload.signatureAnimateur + '" style="max-width:260px;max-height:90px;display:block;margin:8px auto">' : '<div style="height:70px;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;color:#999">Signature non renseignée</div>';
   return '<!doctype html><html><head><meta charset="UTF-8"><style>'
     + 'body{font-family:Arial,sans-serif;color:#222;font-size:13px;padding:24px} '
     + 'h1{color:#015579;text-align:center;font-size:22px;margin-bottom:4px} '
@@ -2137,24 +2034,7 @@ function buildAttestationHtmlPourArchivage(payload) {
     + '.score{border:3px solid #015579;border-radius:10px;text-align:center;padding:14px;margin:16px 0}.score b{font-size:26px;color:#015579} '
     + '.eng{background:#f0f6f9;border-left:4px solid #015579;padding:10px 12px;margin:14px 0;line-height:1.7} '
     + '.sigrow{display:flex;gap:18px;margin-top:18px}.sig{flex:1;border:1px solid #ccc;border-radius:6px;padding:10px;min-height:120px}.lbl{font-size:11px;font-weight:bold;color:#015579;margin-bottom:4px}.footer{font-size:10px;color:#999;text-align:center;border-top:1px solid #eee;margin-top:22px;padding-top:8px}'
-    + '
-/* ══ CORRECTIF V9 — bouton final unique sans toucher aux boutons de lecture ═════════════ */
-#btn-submit-qcm,
-#att-buttons {
-  display: none !important;
-}
-#bloc-validation-unique-info {
-  background:#e6f2f7;
-  border-left:4px solid #015579;
-  padding:10px 12px;
-  border-radius:0 6px 6px 0;
-  font-size:12px;
-  color:#015579;
-  line-height:1.6;
-  margin:10px 0 12px;
-}
-
-</style></head><body>'
+    + '</style></head><body>'
     + '<h1>ATTESTATION DE FORMATION</h1>'
     + '<div class="sub">Livret d\'Accueil Sécurité SET UP — Politique SSE</div>'
     + '<p>Je soussigné(e), <strong>' + htmlEscapeLocal(payload.tuteur) + '</strong>, tuteur/animateur, atteste que le collaborateur suivant a pris connaissance du livret d\'accueil sécurité SET UP et a réalisé le QCM associé.</p>'
@@ -2178,6 +2058,7 @@ function buildArchivePayload() {
   var mention = getMentionArchivage(pct);
   var questions = erreursList && erreursList.length ? erreursList.join(', ') : 'Toutes les réponses sont correctes.';
   var sigSal = (typeof getSigDataUrl === 'function') ? getSigDataUrl('sig-salarie') : null;
+  var sigAnim = (typeof getSigDataUrl === 'function') ? getSigDataUrl('sig-animateur') : null;
   var payload = {
     nom: fd.nom || '',
     contrat: fd.contrat || '',
@@ -2193,7 +2074,7 @@ function buildArchivePayload() {
     dateArchivage: new Date().toLocaleString('fr-FR'),
     userAgent: navigator.userAgent || '',
     signatureSalarie: sigSal || '',
-    signatureAnimateur: ''
+    signatureAnimateur: sigAnim || ''
   };
   payload.attestationHtml = buildAttestationHtmlPourArchivage(payload);
   return payload;
@@ -2265,12 +2146,9 @@ function finaliserEtArchiverLivret() {
   var oldText = btn ? btn.innerHTML : '';
 
   try {
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = 'Validation du livret, notation du QCM et archivage en cours...';
-    }
+    if (btn) { btn.disabled = true; btn.innerHTML = 'Validation et archivage en cours...'; }
 
-    // Vérification des sections lues : on ne modifie pas les boutons "J'ai lu cette section".
+    // 1) Vérifie que le livret a bien été lu, si le contrôle existe.
     if (typeof verifierLecture === 'function') {
       var lectureOk = verifierLecture();
       if (!lectureOk) {
@@ -2279,43 +2157,32 @@ function finaliserEtArchiverLivret() {
       }
     }
 
-    // Valide le QCM si pas encore validé.
+    // 2) Valide le QCM si ce n'est pas déjà fait.
+    // La fonction submitQCM calcule le score, affiche les corrections et prépare l'attestation.
     if (!submitted && typeof submitQCM === 'function') {
       submitQCM();
     }
 
-    // Verrouille les réponses après validation pour éviter les corrections opportunistes.
-    if (typeof verrouillerToutQCM === 'function') {
-      verrouillerToutQCM();
-    }
-
-    // Lance l'archivage après génération des éléments.
+    // 3) Laisse le temps au score / à l'attestation de se mettre à jour, puis archive.
     setTimeout(function(){
-      var c = (typeof conditionsArchivageAuto === 'function')
-        ? conditionsArchivageAuto()
-        : { ok:false, msg:"Fonction d'archivage automatique introuvable." };
+      var c = (typeof conditionsArchivageAuto === 'function') ? conditionsArchivageAuto() : { ok:false, msg:'Fonction d’archivage automatique introuvable.' };
 
       if (!c.ok) {
         if (typeof setArchiveStatus === 'function') setArchiveStatus(c.msg, 'info');
-        alert(c.msg);
+        alert(c.msg + "\n\nL'archivage sera lancé dès que les informations manquantes seront complétées, ou via le bouton d'archivage manuel.");
         if (btn) { btn.disabled = false; btn.innerHTML = oldText; }
         return;
       }
 
       if (typeof tenterArchivageAuto === 'function') {
-        tenterArchivageAuto('bouton-final-unique');
+        tenterArchivageAuto('bouton-finaliser');
       } else if (typeof archiverAttestation === 'function') {
         archiverAttestation();
       }
 
-      if (btn) {
-        btn.innerHTML = '✅ Livret validé — archivage lancé';
-        setTimeout(function(){
-          btn.disabled = false;
-          btn.innerHTML = oldText;
-        }, 3000);
-      }
-    }, 900);
+      if (btn) { btn.innerHTML = '✅ Livret validé et archivage lancé'; }
+      setTimeout(function(){ if (btn) { btn.disabled = false; btn.innerHTML = oldText; } }, 2500);
+    }, 700);
 
   } catch (err) {
     alert('La validation / archivage n’a pas abouti.\n\nDétail : ' + (err && err.message ? err.message : err));
@@ -2325,7 +2192,7 @@ function finaliserEtArchiverLivret() {
 
 
 // ═══════════════════════════════════════════════════════════════════════
-// ARCHIVAGE AUTOMATIQUE — après QCM validé + signature opérateur
+// ARCHIVAGE AUTOMATIQUE — après QCM validé + signatures
 // ═══════════════════════════════════════════════════════════════════════
 var AUTO_ARCHIVE_DONE = false;
 var AUTO_ARCHIVE_RUNNING = false;
@@ -2346,7 +2213,8 @@ function setArchiveStatus(msg, type) {
 
 function signaturesOkPourArchivage() {
   var s1 = typeof getSigDataUrl === 'function' ? getSigDataUrl('sig-salarie') : null;
-  return !!s1;
+  var s2 = typeof getSigDataUrl === 'function' ? getSigDataUrl('sig-animateur') : null;
+  return !!(s1 && s2);
 }
 
 function conditionsArchivageAuto() {
@@ -2354,7 +2222,7 @@ function conditionsArchivageAuto() {
   var payload = buildArchivePayload();
   if (!payload.nom || payload.nom.indexOf('___') >= 0) return { ok:false, msg:'Archivage automatique en attente : nom/prénom à renseigner.' };
   if (!payload.tuteur || payload.tuteur.indexOf('___') >= 0) return { ok:false, msg:'Archivage automatique en attente : tuteur/animateur à renseigner.' };
-  if (!signaturesOkPourArchivage()) return { ok:false, msg:'Archivage automatique en attente : signature opérateur à compléter.' };
+  if (!signaturesOkPourArchivage()) return { ok:false, msg:'Archivage automatique en attente : signatures salarié et animateur à compléter.' };
   return { ok:true, payload: payload };
 }
 
@@ -2410,7 +2278,7 @@ function activerCorrectionsInstantaneesRobustes() {
       try { if (typeof updateAttestation === 'function') updateAttestation(); } catch(e) {}
       try { if (typeof liveCheck === 'function') liveCheck(el); } catch(e) {}
       try { if (typeof updateProgressBar === 'function') updateProgressBar(); } catch(e) {}
-      // V9 : pas d'archivage sur simple saisie.
+      try { if (typeof tenterArchivageAuto === 'function') tenterArchivageAuto('input'); } catch(e) {}
     });
   });
 }
@@ -2493,6 +2361,300 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
   win.document.write(html);
   win.document.close();
 }
+
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PATCH V10 — version stabilisée après retours terrain
+   - un seul bouton final
+   - boutons lecture conservés
+   - signature opérateur uniquement
+   - tuteur à signer après impression
+   - verrouillage QCM après correction
+   - archivage uniquement au bouton final
+   ═══════════════════════════════════════════════════════════════════════ */
+(function(){
+  window.__V10_FINAL_PATCH__ = true;
+
+  function ready(fn){
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+    else fn();
+  }
+
+  function txt(el){ return (el && el.textContent ? el.textContent : '').replace(/\s+/g,' ').trim(); }
+  function val(id){ var e=document.getElementById(id); return e ? (e.value || '').trim() : ''; }
+  function selectedContrat(){
+    var r = document.querySelector('input[name="contrat"]:checked');
+    return r ? txt(r.parentElement) : '';
+  }
+
+  // ── Signature mobile / PC robuste ──────────────────────────────────
+  window.sigPads = window.sigPads || {};
+  window.initSigPad = function(canvasId) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas || sigPads[canvasId]) return;
+
+    // La signature tuteur est volontairement bloquée.
+    if (canvasId === 'sig-animateur') {
+      var ctxTutor = canvas.getContext('2d');
+      function setupTutor(){
+        var rect = canvas.getBoundingClientRect();
+        var dpr = window.devicePixelRatio || 1;
+        var w = rect.width || canvas.offsetWidth || 300;
+        var h = rect.height || canvas.offsetHeight || 130;
+        canvas.width = Math.round(w*dpr);
+        canvas.height = Math.round(h*dpr);
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        ctxTutor.setTransform(dpr,0,0,dpr,0,0);
+        ctxTutor.clearRect(0,0,w,h);
+        ctxTutor.fillStyle = '#f7f7f7';
+        ctxTutor.fillRect(0,0,w,h);
+        ctxTutor.strokeStyle = '#c9c9c9';
+        ctxTutor.setLineDash([6,5]);
+        ctxTutor.strokeRect(8,8,w-16,h-16);
+        ctxTutor.setLineDash([]);
+        ctxTutor.fillStyle = '#777';
+        ctxTutor.font = '12px Arial';
+        ctxTutor.textAlign = 'center';
+        ctxTutor.fillText('À signer par le tuteur après impression', w/2, h/2);
+      }
+      setupTutor();
+      canvas.style.touchAction = 'none';
+      canvas.style.pointerEvents = 'none';
+      canvas.classList.add('signature-tuteur-bloquee');
+      sigPads[canvasId] = { canvas: canvas, ctx: ctxTutor, resize: setupTutor, locked: true };
+      return;
+    }
+
+    var ctx = canvas.getContext('2d');
+    var drawing = false;
+    var lastX = 0, lastY = 0;
+
+    function setupCanvas(){
+      var rect = canvas.getBoundingClientRect();
+      var dpr = window.devicePixelRatio || 1;
+      var cssWidth = rect.width || canvas.offsetWidth || 300;
+      var cssHeight = rect.height || canvas.offsetHeight || 150;
+      var old = null;
+      try { if (canvas.classList.contains('signed')) old = canvas.toDataURL('image/png'); } catch(e) {}
+      var nw = Math.round(cssWidth * dpr), nh = Math.round(cssHeight * dpr);
+      if (canvas.width !== nw || canvas.height !== nh) {
+        canvas.width = nw; canvas.height = nh;
+        canvas.style.width = cssWidth + 'px'; canvas.style.height = cssHeight + 'px';
+        if (old) { var im = new Image(); im.onload=function(){ ctx.setTransform(1,0,0,1,0,0); ctx.drawImage(im,0,0,canvas.width,canvas.height); applyStyle(); }; im.src=old; }
+      }
+      applyStyle();
+    }
+    function applyStyle(){
+      var dpr = window.devicePixelRatio || 1;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.lineWidth = 3.2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#000000';
+      ctx.fillStyle = '#000000';
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    function pos(e){
+      var r = canvas.getBoundingClientRect();
+      var p = e;
+      if (e.touches && e.touches.length) p = e.touches[0];
+      else if (e.changedTouches && e.changedTouches.length) p = e.changedTouches[0];
+      return { x:p.clientX-r.left, y:p.clientY-r.top };
+    }
+    function down(e){
+      if(e && e.preventDefault) e.preventDefault();
+      setupCanvas(); drawing=true; canvas.classList.add('signed');
+      try { if(canvas.setPointerCapture && e.pointerId!==undefined) canvas.setPointerCapture(e.pointerId); } catch(_e) {}
+      var p=pos(e); lastX=p.x; lastY=p.y;
+      ctx.beginPath(); ctx.arc(lastX,lastY,2.2,0,Math.PI*2); ctx.fill();
+    }
+    function move(e){
+      if(!drawing) return;
+      if(e && e.preventDefault) e.preventDefault();
+      var p=pos(e);
+      ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(p.x,p.y); ctx.stroke();
+      lastX=p.x; lastY=p.y;
+    }
+    function up(e){
+      if(e && e.preventDefault) e.preventDefault(); drawing=false; canvas.classList.add('signed');
+      try { if(canvas.releasePointerCapture && e.pointerId!==undefined) canvas.releasePointerCapture(e.pointerId); } catch(_e) {}
+      try { if (typeof updateAttestation === 'function') updateAttestation(); } catch(_e) {}
+    }
+    setupCanvas();
+    canvas.style.touchAction='none'; canvas.style.userSelect='none'; canvas.style.webkitUserSelect='none'; canvas.style.background='#fff';
+    ['pointerdown','touchstart','mousedown'].forEach(function(ev){ canvas.addEventListener(ev, down, {passive:false}); });
+    ['pointermove','touchmove','mousemove'].forEach(function(ev){ canvas.addEventListener(ev, move, {passive:false}); });
+    ['pointerup','pointercancel','pointerleave','touchend','touchcancel','mouseup','mouseleave'].forEach(function(ev){ canvas.addEventListener(ev, up, {passive:false}); });
+    sigPads[canvasId] = { canvas:canvas, ctx:ctx, resize:setupCanvas };
+  };
+
+  window.clearSigPad = function(canvasId){
+    var pad = sigPads[canvasId];
+    if (!pad || pad.locked) return;
+    pad.ctx.clearRect(0,0,pad.canvas.width,pad.canvas.height);
+    pad.canvas.classList.remove('signed');
+    try { if (typeof updateAttestation === 'function') updateAttestation(); } catch(e) {}
+  };
+
+  window.getSigDataUrl = function(canvasId){
+    if (canvasId === 'sig-animateur') return null;
+    var pad = sigPads[canvasId];
+    if (!pad || !pad.canvas.classList.contains('signed')) return null;
+    return pad.canvas.toDataURL('image/png');
+  };
+
+  // ── Verrouillage QCM après validation ──────────────────────────────
+  window.verrouillerToutQCM = function(){
+    document.querySelectorAll('.q input, .q textarea, .q select').forEach(function(el){
+      el.disabled = true;
+      el.style.cursor = 'not-allowed';
+    });
+    document.querySelectorAll('.q label').forEach(function(l){ l.style.cursor='default'; });
+  };
+
+  var originalSubmitQCM = window.submitQCM;
+  window.submitQCM = function(){
+    if (window.submitted) return;
+    if (typeof originalSubmitQCM === 'function') originalSubmitQCM.apply(this, arguments);
+    window.verrouillerToutQCM();
+    var btn = document.getElementById('btn-submit-qcm');
+    if (btn) { btn.disabled = true; btn.textContent = '✅ QCM validé et verrouillé'; }
+  };
+
+  // ── Archivage : uniquement via bouton final ────────────────────────
+  var originalTenterArchivageAuto = window.tenterArchivageAuto;
+  window.tenterArchivageAuto = function(source){
+    if (source !== 'bouton-final-unique') return;
+    return originalTenterArchivageAuto ? originalTenterArchivageAuto(source) : null;
+  };
+
+  window.conditionsArchivageAuto = function(){
+    var nom = val('field-nom');
+    var date = val('field-date');
+    var tuteur = val('field-tuteur');
+    var contrat = selectedContrat();
+    var sig = window.getSigDataUrl('sig-salarie');
+    if (!nom) return {ok:false,msg:'Merci de renseigner le nom et prénom au début du livret.'};
+    if (!date) return {ok:false,msg:'Merci de renseigner la date au début du livret.'};
+    if (!tuteur) return {ok:false,msg:'Merci de renseigner le tuteur / parrain au début du livret.'};
+    if (!contrat) return {ok:false,msg:'Merci de sélectionner le type de contrat au début du livret.'};
+    if (!window.submitted) return {ok:false,msg:'Le QCM doit être validé.'};
+    if (!sig) return {ok:false,msg:'Merci de signer la partie salarié / opérateur.'};
+    return {ok:true,msg:'OK'};
+  };
+
+  // Payload stable, sans signature tuteur obligatoire.
+  window.buildArchivePayload = function(){
+    var nom = val('field-nom');
+    var dateFormation = val('field-date');
+    var tuteur = val('field-tuteur');
+    var contrat = selectedContrat();
+    var total = window.finalTotal || 0;
+    var score = window.finalScore || 0;
+    var pct = total ? Math.round(score/total*100) : 0;
+    var mention = (typeof getMentionArchivage === 'function') ? getMentionArchivage(pct) : (pct>=80?'ACQUIS':pct>=60?'EN COURS D\'ACQUISITION':'NON ACQUIS');
+    var questions = (window.erreursList && window.erreursList.length) ? ('Questions à revoir : ' + window.erreursList.join(', ')) : 'Aucune question à revoir.';
+    var payload = {
+      nom: nom,
+      contrat: contrat,
+      dateFormation: dateFormation,
+      tuteur: tuteur,
+      fonctionTuteur: '',
+      score: score,
+      total: total,
+      pourcentage: pct,
+      mention: mention,
+      questionsARevoir: questions,
+      signatureSalarie: window.getSigDataUrl('sig-salarie'),
+      signatureAnimateur: null,
+      dateArchivage: new Date().toLocaleString('fr-FR'),
+      userAgent: navigator.userAgent
+    };
+    payload.attestationHtml = (typeof buildAttestationHtmlPourArchivage === 'function') ? buildAttestationHtmlPourArchivage(payload) : '';
+    return payload;
+  };
+
+  // PDF : tuteur à signer après impression.
+  var originalBuildPdf = window.buildAttestationHtmlPourArchivage;
+  window.buildAttestationHtmlPourArchivage = function(payload){
+    if (!originalBuildPdf) return '';
+    payload.signatureAnimateur = null;
+    var html = originalBuildPdf(payload);
+    html = html.replace(/Signature non renseignée<\/div><\/div><\/div><div class="footer"/, 'À signer par le tuteur après impression</div></div></div><div class="footer"');
+    html = html.replace(/<div class="lbl">ANIMATEUR[^<]*<\/div>/, '<div class="lbl">TUTEUR / ANIMATEUR — à signer après impression</div>');
+    return html;
+  };
+
+  // Un seul bouton final : lecture + QCM + verrouillage + archivage.
+  window.finaliserEtArchiverLivret = function(){
+    var btn = document.getElementById('btn-finaliser-livret');
+    var oldText = btn ? btn.innerHTML : '';
+    try {
+      if (btn) { btn.disabled = true; btn.innerHTML = 'Validation du livret, correction du QCM et archivage...'; }
+
+      if (typeof verifierLecture === 'function' && !verifierLecture()) {
+        if (btn) { btn.disabled = false; btn.innerHTML = oldText; }
+        return;
+      }
+
+      if (!window.submitted && typeof window.submitQCM === 'function') window.submitQCM();
+      window.verrouillerToutQCM();
+
+      var c = window.conditionsArchivageAuto();
+      if (!c.ok) {
+        alert(c.msg);
+        if (btn) { btn.disabled = false; btn.innerHTML = oldText; }
+        return;
+      }
+
+      if (typeof archiverAttestation === 'function') {
+        archiverAttestation();
+      } else if (originalTenterArchivageAuto) {
+        originalTenterArchivageAuto('bouton-final-unique');
+      }
+      if (btn) btn.innerHTML = '✅ Livret validé et archivage lancé';
+      setTimeout(function(){ if(btn){ btn.disabled=false; btn.innerHTML=oldText; } }, 3500);
+    } catch(err) {
+      alert('La validation / archivage n’a pas abouti.\n\nDétail : ' + (err && err.message ? err.message : err));
+      if (btn) { btn.disabled=false; btn.innerHTML=oldText; }
+    }
+  };
+
+  ready(function(){
+    // Masquer les boutons intermédiaires, garder les boutons de lecture.
+    var style = document.createElement('style');
+    style.textContent = '#btn-submit-qcm,#att-buttons{display:none!important}.signature-tuteur-bloquee{background:#f7f7f7!important}.sig-tuteur-note{font-size:11px;color:#777;margin-top:6px;line-height:1.4}.accuse-identification-doublon{display:none!important}';
+    document.head.appendChild(style);
+
+    var finalBtn = document.getElementById('btn-finaliser-livret');
+    if (finalBtn) finalBtn.innerHTML = '✅ Valider le livret, corriger le QCM et archiver';
+
+    // Remplacer le doublon d'identification en fin de document par une note.
+    var accuse = document.getElementById('accuse');
+    if (accuse) {
+      var grid = accuse.querySelector('.id-grid');
+      if (grid) {
+        grid.classList.add('accuse-identification-doublon');
+        var note = document.createElement('div');
+        note.className = 'hl';
+        note.innerHTML = 'Les informations d’identification sont reprises automatiquement depuis le bloc renseigné au début du livret. Pas besoin de les ressaisir ici.';
+        grid.parentNode.insertBefore(note, grid.nextSibling);
+      }
+    }
+
+    // Tuteur : zone bloquée + texte clair.
+    var tuteurCanvas = document.getElementById('sig-animateur');
+    if (tuteurCanvas) {
+      var toolbar = tuteurCanvas.parentElement ? tuteurCanvas.parentElement.querySelector('.sig-toolbar') : null;
+      if (toolbar) toolbar.innerHTML = '<span class="sig-hint">🖊️ Signature du tuteur à compléter après impression de l’attestation.</span>';
+      if (!sigPads['sig-animateur']) initSigPad('sig-animateur');
+    }
+    if (document.getElementById('sig-salarie') && !sigPads['sig-salarie']) initSigPad('sig-salarie');
+  });
+})();
 
 </script>
 
