@@ -341,6 +341,44 @@ body > .page { display: none !important; }
   #cfg-gear { bottom: 14px !important; right: 14px !important; }
 }
 
+
+/* ══ V7 — Verrouillage QCM + signature tuteur papier ═════════════ */
+.q.locked-qcm {
+  opacity: 0.96;
+  border-color: #d7e8ef !important;
+  background: #fbfdfe !important;
+}
+.q.locked-qcm input,
+.q.locked-qcm select,
+.q.locked-qcm textarea {
+  pointer-events: none !important;
+}
+.q.locked-qcm label {
+  cursor: default !important;
+}
+.locked-note-qcm {
+  margin-top: 8px;
+  padding: 7px 10px;
+  border-radius: 5px;
+  background: #e6f2f7;
+  color: #015579;
+  font-size: 11px;
+  border-left: 3px solid #015579;
+}
+.tuteur-signature-papier {
+  border: 2px dashed #bbb;
+  border-radius: 8px;
+  min-height: 130px;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #777;
+  font-size: 12px;
+  text-align: center;
+  padding: 12px;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -1209,13 +1247,8 @@ QCM — Questions Sécurité</h2></div>
       </div>
       <div>
         <p style="font-weight:700;font-size:13px;margin-bottom:6px">ANIMATEUR / TUTEUR — Signature :</p>
-        <p style="font-size:12px;color:#777;margin-bottom:5px">Fonction : <input class="ti" id="animateur-fonction" placeholder="Ex: Responsable travaux" style="display:inline;width:170px;padding:4px 8px;margin-top:0"></p>
-        <div class="sig-pad-wrap">
-          <canvas id="sig-animateur" class="sig-canvas"></canvas>
-          <div class="sig-toolbar">
-            <span class="sig-hint"><span class="sig-hint-icon">✍️</span> Signez avec le doigt ou la souris</span>
-            <button class="sig-btn" onclick="clearSigPad('sig-animateur')">✕ Effacer</button>
-          </div>
+        <div class="tuteur-signature-papier">
+          Signature du tuteur à compléter après impression de l'attestation.
         </div>
       </div>
     </div>
@@ -1346,6 +1379,56 @@ function updateProgressBar() {
   pb.style.background = (answered>0 && correct/answered>=0.8) ? '#015579' : (correct/answered>=0.6 ? '#ef7d01' : '#e74c3c');
   if (pt) pt.textContent = answered + ' / ' + TOTAL_QUESTIONS + ' \u00e9l\u00e9ments r\u00e9pondus \u2014 ' + correct + ' correct(s)';
 }
+
+function verrouillerQuestion(qId) {
+  var q = document.getElementById('q-' + qId);
+  if (!q) return;
+
+  var controls = q.querySelectorAll('input, select, textarea, button.sbtn');
+  for (var i = 0; i < controls.length; i++) {
+    controls[i].disabled = true;
+  }
+
+  q.classList.add('locked-qcm');
+
+  if (!q.querySelector('.locked-note-qcm')) {
+    var note = document.createElement('div');
+    note.className = 'locked-note-qcm';
+    note.innerHTML = '🔒 Réponse verrouillée après validation.';
+    q.appendChild(note);
+  }
+}
+
+function verrouillerQuestionSimple(qId) {
+  if (qId === 'd' || qId === 'd2') {
+    if (getVal('ti-d1') && getVal('ti-d2')) verrouillerQuestion('d');
+    return;
+  }
+  if (qId === 'd1') {
+    if (getVal('ti-d1') && getVal('ti-d2')) verrouillerQuestion('d');
+    return;
+  }
+  verrouillerQuestion(qId);
+}
+
+function qcmFComplet() {
+  var ids = ['ti-fa','ti-fb','ti-fc','ti-fd','ti-fe','ti-fval'];
+  for (var i = 0; i < ids.length; i++) {
+    var v = getVal(ids[i]);
+    if (!v || v === '-- Choisir --' || v === '—' || v === '--') return false;
+  }
+  return true;
+}
+
+function verrouillerToutQCM() {
+  var qs = document.querySelectorAll('.qsec .q');
+  for (var i = 0; i < qs.length; i++) {
+    if (qs[i].id && qs[i].id.indexOf('q-') === 0) {
+      verrouillerQuestion(qs[i].id.substring(2));
+    }
+  }
+}
+
 function liveCheck(qId, key, val) {
   var a = ANSWERS[key]; if (!a) return;
   var v = (val||'').trim();
@@ -1362,6 +1445,7 @@ function liveCheck(qId, key, val) {
     : '\u274C <strong style="color:#c0392b">Mauvaise r\u00e9ponse</strong> \u2014 R\u00e9ponse attendue\u00a0: <em style="color:#c0392b">' + a.correct + '</em><br><span style="font-size:12px;color:#7b241c">' + a.expl + '</span>';
   q.appendChild(div);
   updateProgressBar();
+  verrouillerQuestionSimple(qId);
 }
 function validerTexte(qId, key, inputId) {
   var val = getVal(inputId);
@@ -1393,6 +1477,7 @@ function liveCheckE() {
   div.style.cssText='margin-top:8px;padding:10px 14px;border-radius:7px;font-size:13px;line-height:1.7;border-left:4px solid '+(allOk?'#27ae60':!diff?'#f39c12':'#e74c3c')+';background:'+(allOk?'#eaf7f0':'#fff5f5');
   div.innerHTML=allOk?'\u2705 <strong style="color:#1a7a45">Correct\u00a0!</strong><br>Une corde de travail + une corde de s\u00e9curit\u00e9.':(!diff?'\u26A0 Les deux cordes doivent \u00eatre diff\u00e9rentes.':'\u274C <strong style="color:#c0392b">Incorrect</strong> \u2014 Attendu\u00a0: corde de travail + corde de s\u00e9curit\u00e9.');
   q.appendChild(div); updateProgressBar();
+  verrouillerQuestion('e');
 }
 function liveFCheck() {
   var ids=['ti-fa','ti-fb','ti-fc','ti-fd','ti-fe'];
@@ -1411,6 +1496,7 @@ function liveFCheck() {
   var detail=results.map(function(ok,i){ return (ok?'\u2705 ':'\u274C ')+labels[i]+': '+names[i]; }).join('  ');
   div.innerHTML=(nOk===5?'<strong style="color:#1a7a45">\u2705 Les 5 \u00e9l\u00e9ments sont corrects\u00a0!</strong>':'<strong style="color:#c0392b">\u274C '+nOk+'/5 correct</strong>')+'<br>'+detail;
   q.appendChild(div); updateProgressBar();
+  if (qcmFComplet()) verrouillerQuestion('f');
 }
 function liveFValCheck(val) {
   if (!val||val==='-- Choisir --') return;
@@ -1433,6 +1519,7 @@ function liveFValCheck(val) {
     ?'\u2705 <strong style="color:#1a7a45">Bonne r\u00e9ponse\u00a0!</strong> Valeur minimale\u00a0: <strong>6,5\u00a0m</strong> <em style="font-size:11px;color:#555">(6\u00a0m, 6,5\u00a0m et 7\u00a0m accept\u00e9s)</em><br><strong style="color:#015579;font-size:12px">Detail du calcul\u00a0:</strong>'+expl
     :'\u274C <strong style="color:#c0392b">Incorrect</strong> \u2014 Valeur minimale\u00a0: <em>6,5\u00a0m</em><br><strong style="color:#015579;font-size:12px">Rappel du calcul\u00a0:</strong>'+expl;
   q.appendChild(div); updateProgressBar();
+  if (qcmFComplet()) verrouillerQuestion('f');
 }
 function liveCheckL() {
   var sec=getVal('sel-secourir'), ale=getVal('sel-alerter'), pro=getVal('sel-proteger');
@@ -1448,6 +1535,7 @@ function liveCheckL() {
     +'<strong>2 ALERTER</strong> : appeler les secours (18 / 15 / 112).<br>'
     +'<strong>3 SECOURIR</strong> : premiers soins.';
   q.appendChild(div); updateProgressBar();
+  verrouillerQuestion('l');
 }
 function liveCheckO() {
   var ra=document.querySelector('input[name="qoa"]:checked');
@@ -1469,6 +1557,7 @@ function liveCheckO() {
     +'<strong style="color:#ef7d01">B \u2014 Facteur 1 '+(okB?'\u2705':'\u274C('+vb+')')+'</strong> : niveau du torse.<br>'
     +'<strong style="color:#c0392b">C \u2014 Facteur 2 '+(okC?'\u2705':'\u274C('+vc+')')+'</strong> : niveau des pieds. <strong>A EVITER.</strong>';
   q.appendChild(div); updateProgressBar();
+  verrouillerQuestion('oa');
 }
 function showFB(qId, ok, key) {
   var q=document.getElementById('q-'+qId); if (!q) return;
@@ -1536,6 +1625,7 @@ function submitQCM() {
   if (btn) { btn.textContent='\u2705 QCM valide'; btn.disabled=true; btn.style.opacity='0.6'; }
   var ab=document.getElementById('att-buttons');
   if (ab) ab.style.display='flex';
+  verrouillerToutQCM();
   try{if(sd) sd.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){if(sd) sd.scrollIntoView(false);}
   afficherDestinataires();
   setTimeout(function(){ tenterArchivageAuto('qcm'); }, 500);
@@ -1781,7 +1871,6 @@ function genererAttestation() {
     : 'Toutes les réponses sont correctes.';
 
   var sigSal  = getSigDataUrl('sig-salarie')   || null;
-  var sigAnim = getSigDataUrl('sig-animateur') || null;
 
   // Score display
   var scoreDisplay = submitted
@@ -1831,13 +1920,10 @@ function genererAttestation() {
         : '<div style="border:1px dashed #ccc;border-radius:4px;height:60px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:11px;margin:6px 0">✍️ Signature non encore apposée</div>')
     + '</div>'
 
-    // Animateur
+    // Animateur / tuteur : signature papier après impression
     + '<div class="attest-sig">'
-    + '<div class="attest-sig-lbl">ANIMATEUR — ' + fd.tuteur + '</div>'
-    + (fd.fonctAnim ? '<div style="font-size:10px;color:#777;margin:2px 0">Fonction : ' + fd.fonctAnim + '</div>' : '')
-    + (sigAnim
-        ? '<img src="' + sigAnim + '" style="max-width:100%;max-height:75px;display:block;margin:4px 0">'
-        : '<div style="border:1px dashed #ccc;border-radius:4px;height:60px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:11px;margin:6px 0">✍️ Signature non encore apposée</div>')
+    + '<div class="attest-sig-lbl">ANIMATEUR / TUTEUR — ' + fd.tuteur + '</div>'
+    + '<div style="border:1px dashed #999;border-radius:4px;height:70px;display:flex;align-items:center;justify-content:center;color:#777;font-size:11px;margin:6px 0;text-align:center">Signature à compléter après impression</div>'
     + '</div>'
     + '</div>'
 
@@ -2025,7 +2111,7 @@ function getMentionArchivage(pct) {
 
 function buildAttestationHtmlPourArchivage(payload) {
   var sigSal = payload.signatureSalarie ? '<img src="' + payload.signatureSalarie + '" style="max-width:260px;max-height:90px;display:block;margin:8px auto">' : '<div style="height:70px;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;color:#999">Signature non renseignée</div>';
-  var sigAnim = payload.signatureAnimateur ? '<img src="' + payload.signatureAnimateur + '" style="max-width:260px;max-height:90px;display:block;margin:8px auto">' : '<div style="height:70px;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;color:#999">Signature non renseignée</div>';
+  var sigAnim = '<div style="height:70px;border:1px dashed #999;display:flex;align-items:center;justify-content:center;color:#777;text-align:center">Signature du tuteur à compléter après impression</div>';
   return '<!doctype html><html><head><meta charset="UTF-8"><style>'
     + 'body{font-family:Arial,sans-serif;color:#222;font-size:13px;padding:24px} '
     + 'h1{color:#015579;text-align:center;font-size:22px;margin-bottom:4px} '
@@ -2058,7 +2144,6 @@ function buildArchivePayload() {
   var mention = getMentionArchivage(pct);
   var questions = erreursList && erreursList.length ? erreursList.join(', ') : 'Toutes les réponses sont correctes.';
   var sigSal = (typeof getSigDataUrl === 'function') ? getSigDataUrl('sig-salarie') : null;
-  var sigAnim = (typeof getSigDataUrl === 'function') ? getSigDataUrl('sig-animateur') : null;
   var payload = {
     nom: fd.nom || '',
     contrat: fd.contrat || '',
@@ -2074,7 +2159,7 @@ function buildArchivePayload() {
     dateArchivage: new Date().toLocaleString('fr-FR'),
     userAgent: navigator.userAgent || '',
     signatureSalarie: sigSal || '',
-    signatureAnimateur: sigAnim || ''
+    signatureAnimateur: ''
   };
   payload.attestationHtml = buildAttestationHtmlPourArchivage(payload);
   return payload;
@@ -2192,7 +2277,7 @@ function finaliserEtArchiverLivret() {
 
 
 // ═══════════════════════════════════════════════════════════════════════
-// ARCHIVAGE AUTOMATIQUE — après QCM validé + signatures
+// ARCHIVAGE AUTOMATIQUE — après QCM validé + signature opérateur
 // ═══════════════════════════════════════════════════════════════════════
 var AUTO_ARCHIVE_DONE = false;
 var AUTO_ARCHIVE_RUNNING = false;
@@ -2213,8 +2298,7 @@ function setArchiveStatus(msg, type) {
 
 function signaturesOkPourArchivage() {
   var s1 = typeof getSigDataUrl === 'function' ? getSigDataUrl('sig-salarie') : null;
-  var s2 = typeof getSigDataUrl === 'function' ? getSigDataUrl('sig-animateur') : null;
-  return !!(s1 && s2);
+  return !!s1;
 }
 
 function conditionsArchivageAuto() {
@@ -2222,7 +2306,7 @@ function conditionsArchivageAuto() {
   var payload = buildArchivePayload();
   if (!payload.nom || payload.nom.indexOf('___') >= 0) return { ok:false, msg:'Archivage automatique en attente : nom/prénom à renseigner.' };
   if (!payload.tuteur || payload.tuteur.indexOf('___') >= 0) return { ok:false, msg:'Archivage automatique en attente : tuteur/animateur à renseigner.' };
-  if (!signaturesOkPourArchivage()) return { ok:false, msg:'Archivage automatique en attente : signatures salarié et animateur à compléter.' };
+  if (!signaturesOkPourArchivage()) return { ok:false, msg:'Archivage automatique en attente : signature opérateur à compléter.' };
   return { ok:true, payload: payload };
 }
 
