@@ -380,7 +380,7 @@ body > .page { display: none !important; }
 }
 
 
-/* ══ CORRECTIF V8 — un seul bouton final ═══════════════════════════════ */
+/* ══ CORRECTIF V9 — bouton final unique sans toucher aux boutons de lecture ═════════════ */
 #btn-submit-qcm,
 #att-buttons {
   display: none !important;
@@ -393,7 +393,7 @@ body > .page { display: none !important; }
   font-size:12px;
   color:#015579;
   line-height:1.6;
-  margin:10px 0 0;
+  margin:10px 0 12px;
 }
 
 </style>
@@ -1240,8 +1240,13 @@ QCM — Questions Sécurité</h2></div>
 <div class="section" id="accuse">
   <div class="sh"><h2>✅ Accusé de réception — Livret d'Accueil Sécurité &amp; QCM</h2></div>
   <div class="sb">
-    <div class="hl">
-      Les informations d'identification sont reprises automatiquement depuis le bloc renseigné en début de livret. Il n'est donc pas nécessaire de les ressaisir ici.
+    <div class="id-grid">
+      <strong>NOM Prénom :</strong>
+      <input id="field-nom" class="ti" placeholder="___________________________________" oninput="updateAttestation()">
+      <strong>Date :</strong>
+      <input id="field-date" class="ti" type="date" onchange="updateAttestation()">
+      <strong>Tuteur / Parrain :</strong>
+      <input class="ti" placeholder="___________________________________">
     </div>
     <br>
     <p>Atteste que le livret d'accueil SET UP m'a été <strong>présenté et commenté dans son intégralité</strong>.</p>
@@ -1268,10 +1273,7 @@ QCM — Questions Sécurité</h2></div>
 </div>
 
 <div class="submit-area">
-  <div id="bloc-validation-unique-info">
-  ✅ Un seul bouton suffit : il vérifie la lecture du livret, valide le QCM, verrouille les réponses, génère l'attestation puis archive automatiquement les résultats dans Google Sheets et l'attestation dans Google Drive.
-</div>
-<button id="btn-finaliser-livret" class="submit-btn" type="button" onclick="finaliserEtArchiverLivret()">✅ Valider le livret, noter le QCM et archiver</button>
+  <button id="btn-finaliser-livret" class="submit-btn" type="button" onclick="finaliserEtArchiverLivret()">✅ Valider le livret, noter le QCM et archiver</button>
   <p class="version"> — SET UP · Politique SSE</p>
 </div>
 
@@ -1643,7 +1645,7 @@ function submitQCM() {
   verrouillerToutQCM();
   try{if(sd) sd.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){if(sd) sd.scrollIntoView(false);}
   afficherDestinataires();
-  // V8 : l'archivage est lancé uniquement par le bouton final unique.
+  // V9 : archivage lancé uniquement par le bouton final unique.
 }
 function _lsGet(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
 function _lsSet(k,v) { try { localStorage.setItem(k,v); } catch(e) {} }
@@ -2136,7 +2138,7 @@ function buildAttestationHtmlPourArchivage(payload) {
     + '.eng{background:#f0f6f9;border-left:4px solid #015579;padding:10px 12px;margin:14px 0;line-height:1.7} '
     + '.sigrow{display:flex;gap:18px;margin-top:18px}.sig{flex:1;border:1px solid #ccc;border-radius:6px;padding:10px;min-height:120px}.lbl{font-size:11px;font-weight:bold;color:#015579;margin-bottom:4px}.footer{font-size:10px;color:#999;text-align:center;border-top:1px solid #eee;margin-top:22px;padding-top:8px}'
     + '
-/* ══ CORRECTIF V8 — un seul bouton final ═══════════════════════════════ */
+/* ══ CORRECTIF V9 — bouton final unique sans toucher aux boutons de lecture ═════════════ */
 #btn-submit-qcm,
 #att-buttons {
   display: none !important;
@@ -2149,7 +2151,7 @@ function buildAttestationHtmlPourArchivage(payload) {
   font-size:12px;
   color:#015579;
   line-height:1.6;
-  margin:10px 0 0;
+  margin:10px 0 12px;
 }
 
 </style></head><body>'
@@ -2268,7 +2270,7 @@ function finaliserEtArchiverLivret() {
       btn.innerHTML = 'Validation du livret, notation du QCM et archivage en cours...';
     }
 
-    // 1) Vérifie que le livret a bien été lu.
+    // Vérification des sections lues : on ne modifie pas les boutons "J'ai lu cette section".
     if (typeof verifierLecture === 'function') {
       var lectureOk = verifierLecture();
       if (!lectureOk) {
@@ -2277,17 +2279,17 @@ function finaliserEtArchiverLivret() {
       }
     }
 
-    // 2) Valide le QCM une seule fois.
+    // Valide le QCM si pas encore validé.
     if (!submitted && typeof submitQCM === 'function') {
       submitQCM();
     }
 
-    // 3) Verrouille les réponses après validation pour éviter les corrections opportunistes.
+    // Verrouille les réponses après validation pour éviter les corrections opportunistes.
     if (typeof verrouillerToutQCM === 'function') {
       verrouillerToutQCM();
     }
 
-    // 4) Génère l'attestation et archive automatiquement.
+    // Lance l'archivage après génération des éléments.
     setTimeout(function(){
       var c = (typeof conditionsArchivageAuto === 'function')
         ? conditionsArchivageAuto()
@@ -2313,7 +2315,7 @@ function finaliserEtArchiverLivret() {
           btn.innerHTML = oldText;
         }, 3000);
       }
-    }, 800);
+    }, 900);
 
   } catch (err) {
     alert('La validation / archivage n’a pas abouti.\n\nDétail : ' + (err && err.message ? err.message : err));
@@ -2408,7 +2410,7 @@ function activerCorrectionsInstantaneesRobustes() {
       try { if (typeof updateAttestation === 'function') updateAttestation(); } catch(e) {}
       try { if (typeof liveCheck === 'function') liveCheck(el); } catch(e) {}
       try { if (typeof updateProgressBar === 'function') updateProgressBar(); } catch(e) {}
-      // V8 : pas d'archivage sur simple saisie.
+      // V9 : pas d'archivage sur simple saisie.
     });
   });
 }
