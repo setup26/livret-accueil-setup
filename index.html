@@ -379,6 +379,23 @@ body > .page { display: none !important; }
   padding: 12px;
 }
 
+
+/* ══ CORRECTIF V8 — un seul bouton final ═══════════════════════════════ */
+#btn-submit-qcm,
+#att-buttons {
+  display: none !important;
+}
+#bloc-validation-unique-info {
+  background:#e6f2f7;
+  border-left:4px solid #015579;
+  padding:10px 12px;
+  border-radius:0 6px 6px 0;
+  font-size:12px;
+  color:#015579;
+  line-height:1.6;
+  margin:10px 0 0;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -1193,7 +1210,7 @@ QCM — Questions Sécurité</h2></div>
       📋 Valider et noter mon QCM
     </button>
 <div id="qcm-warning" style="margin-top:8px;padding:8px 12px;border-radius:6px;background:#fff3cd;border:1px solid #ffc107;font-size:12px;color:#856404;text-align:center">&#x26A0;&#xFE0F; Lisez et validez chaque thème du livret avant de commencer le QCM</div>
-    <p style="font-size:11px;color:#888;margin-top:8px">Vos réponses seront évaluées et les corrections affichées après validation.</p>
+    <p style="font-size:11px;color:#888;margin-top:8px">Le QCM sera évalué automatiquement au moment de la validation finale du livret.</p>
     <div style="margin-top:14px">
       <div id="att-buttons" style="display:none;flex-direction:column;align-items:center;gap:10px;width:100%">
         <div id="mail-dest-info" style="font-size:11px;color:#888;text-align:center;padding:4px 8px;background:#f5f5f5;border-radius:5px;width:100%;box-sizing:border-box"></div>
@@ -1223,13 +1240,8 @@ QCM — Questions Sécurité</h2></div>
 <div class="section" id="accuse">
   <div class="sh"><h2>✅ Accusé de réception — Livret d'Accueil Sécurité &amp; QCM</h2></div>
   <div class="sb">
-    <div class="id-grid">
-      <strong>NOM Prénom :</strong>
-      <input id="field-nom" class="ti" placeholder="___________________________________" oninput="updateAttestation()">
-      <strong>Date :</strong>
-      <input id="field-date" class="ti" type="date" onchange="updateAttestation()">
-      <strong>Tuteur / Parrain :</strong>
-      <input class="ti" placeholder="___________________________________">
+    <div class="hl">
+      Les informations d'identification sont reprises automatiquement depuis le bloc renseigné en début de livret. Il n'est donc pas nécessaire de les ressaisir ici.
     </div>
     <br>
     <p>Atteste que le livret d'accueil SET UP m'a été <strong>présenté et commenté dans son intégralité</strong>.</p>
@@ -1256,7 +1268,10 @@ QCM — Questions Sécurité</h2></div>
 </div>
 
 <div class="submit-area">
-  <button id="btn-finaliser-livret" class="submit-btn" type="button" onclick="finaliserEtArchiverLivret()">✅ Valider et soumettre le livret d'accueil</button>
+  <div id="bloc-validation-unique-info">
+  ✅ Un seul bouton suffit : il vérifie la lecture du livret, valide le QCM, verrouille les réponses, génère l'attestation puis archive automatiquement les résultats dans Google Sheets et l'attestation dans Google Drive.
+</div>
+<button id="btn-finaliser-livret" class="submit-btn" type="button" onclick="finaliserEtArchiverLivret()">✅ Valider le livret, noter le QCM et archiver</button>
   <p class="version"> — SET UP · Politique SSE</p>
 </div>
 
@@ -1628,7 +1643,7 @@ function submitQCM() {
   verrouillerToutQCM();
   try{if(sd) sd.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){if(sd) sd.scrollIntoView(false);}
   afficherDestinataires();
-  setTimeout(function(){ tenterArchivageAuto('qcm'); }, 500);
+  // V8 : l'archivage est lancé uniquement par le bouton final unique.
 }
 function _lsGet(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
 function _lsSet(k,v) { try { localStorage.setItem(k,v); } catch(e) {} }
@@ -2120,7 +2135,24 @@ function buildAttestationHtmlPourArchivage(payload) {
     + '.score{border:3px solid #015579;border-radius:10px;text-align:center;padding:14px;margin:16px 0}.score b{font-size:26px;color:#015579} '
     + '.eng{background:#f0f6f9;border-left:4px solid #015579;padding:10px 12px;margin:14px 0;line-height:1.7} '
     + '.sigrow{display:flex;gap:18px;margin-top:18px}.sig{flex:1;border:1px solid #ccc;border-radius:6px;padding:10px;min-height:120px}.lbl{font-size:11px;font-weight:bold;color:#015579;margin-bottom:4px}.footer{font-size:10px;color:#999;text-align:center;border-top:1px solid #eee;margin-top:22px;padding-top:8px}'
-    + '</style></head><body>'
+    + '
+/* ══ CORRECTIF V8 — un seul bouton final ═══════════════════════════════ */
+#btn-submit-qcm,
+#att-buttons {
+  display: none !important;
+}
+#bloc-validation-unique-info {
+  background:#e6f2f7;
+  border-left:4px solid #015579;
+  padding:10px 12px;
+  border-radius:0 6px 6px 0;
+  font-size:12px;
+  color:#015579;
+  line-height:1.6;
+  margin:10px 0 0;
+}
+
+</style></head><body>'
     + '<h1>ATTESTATION DE FORMATION</h1>'
     + '<div class="sub">Livret d\'Accueil Sécurité SET UP — Politique SSE</div>'
     + '<p>Je soussigné(e), <strong>' + htmlEscapeLocal(payload.tuteur) + '</strong>, tuteur/animateur, atteste que le collaborateur suivant a pris connaissance du livret d\'accueil sécurité SET UP et a réalisé le QCM associé.</p>'
@@ -2231,9 +2263,12 @@ function finaliserEtArchiverLivret() {
   var oldText = btn ? btn.innerHTML : '';
 
   try {
-    if (btn) { btn.disabled = true; btn.innerHTML = 'Validation et archivage en cours...'; }
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = 'Validation du livret, notation du QCM et archivage en cours...';
+    }
 
-    // 1) Vérifie que le livret a bien été lu, si le contrôle existe.
+    // 1) Vérifie que le livret a bien été lu.
     if (typeof verifierLecture === 'function') {
       var lectureOk = verifierLecture();
       if (!lectureOk) {
@@ -2242,32 +2277,43 @@ function finaliserEtArchiverLivret() {
       }
     }
 
-    // 2) Valide le QCM si ce n'est pas déjà fait.
-    // La fonction submitQCM calcule le score, affiche les corrections et prépare l'attestation.
+    // 2) Valide le QCM une seule fois.
     if (!submitted && typeof submitQCM === 'function') {
       submitQCM();
     }
 
-    // 3) Laisse le temps au score / à l'attestation de se mettre à jour, puis archive.
+    // 3) Verrouille les réponses après validation pour éviter les corrections opportunistes.
+    if (typeof verrouillerToutQCM === 'function') {
+      verrouillerToutQCM();
+    }
+
+    // 4) Génère l'attestation et archive automatiquement.
     setTimeout(function(){
-      var c = (typeof conditionsArchivageAuto === 'function') ? conditionsArchivageAuto() : { ok:false, msg:'Fonction d’archivage automatique introuvable.' };
+      var c = (typeof conditionsArchivageAuto === 'function')
+        ? conditionsArchivageAuto()
+        : { ok:false, msg:"Fonction d'archivage automatique introuvable." };
 
       if (!c.ok) {
         if (typeof setArchiveStatus === 'function') setArchiveStatus(c.msg, 'info');
-        alert(c.msg + "\n\nL'archivage sera lancé dès que les informations manquantes seront complétées, ou via le bouton d'archivage manuel.");
+        alert(c.msg);
         if (btn) { btn.disabled = false; btn.innerHTML = oldText; }
         return;
       }
 
       if (typeof tenterArchivageAuto === 'function') {
-        tenterArchivageAuto('bouton-finaliser');
+        tenterArchivageAuto('bouton-final-unique');
       } else if (typeof archiverAttestation === 'function') {
         archiverAttestation();
       }
 
-      if (btn) { btn.innerHTML = '✅ Livret validé et archivage lancé'; }
-      setTimeout(function(){ if (btn) { btn.disabled = false; btn.innerHTML = oldText; } }, 2500);
-    }, 700);
+      if (btn) {
+        btn.innerHTML = '✅ Livret validé — archivage lancé';
+        setTimeout(function(){
+          btn.disabled = false;
+          btn.innerHTML = oldText;
+        }, 3000);
+      }
+    }, 800);
 
   } catch (err) {
     alert('La validation / archivage n’a pas abouti.\n\nDétail : ' + (err && err.message ? err.message : err));
@@ -2362,7 +2408,7 @@ function activerCorrectionsInstantaneesRobustes() {
       try { if (typeof updateAttestation === 'function') updateAttestation(); } catch(e) {}
       try { if (typeof liveCheck === 'function') liveCheck(el); } catch(e) {}
       try { if (typeof updateProgressBar === 'function') updateProgressBar(); } catch(e) {}
-      try { if (typeof tenterArchivageAuto === 'function') tenterArchivageAuto('input'); } catch(e) {}
+      // V8 : pas d'archivage sur simple saisie.
     });
   });
 }
