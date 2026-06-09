@@ -160,8 +160,10 @@ textarea.ti{resize:vertical;min-height:55px}
 .sig-canvas {
   width: 100%; height: 130px;
   border: 2px dashed #ccc; border-radius: 8px;
-  cursor: crosshair; background: #fafafa;
+  cursor: crosshair; background: #ffffff;
   display: block; touch-action: none;
+  position: relative;
+  z-index: 2;
 }
 .sig-canvas.signed { border-color: #015579; border-style: solid; background: white; }
 .sig-toolbar {
@@ -1796,124 +1798,119 @@ function initSigPad(canvasId) {
   var lastX = 0;
   var lastY = 0;
 
-  function resizeCanvas() {
+  function setupCanvas() {
     var rect = canvas.getBoundingClientRect();
     var dpr = window.devicePixelRatio || 1;
-    var width = rect.width || 300;
-    var height = rect.height || 130;
+    var cssWidth = rect.width || canvas.offsetWidth || 300;
+    var cssHeight = rect.height || canvas.offsetHeight || 130;
 
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
+    var oldData = null;
+    try {
+      if (canvas.width > 0 && canvas.height > 0) oldData = canvas.toDataURL('image/png');
+    } catch (e) {}
 
-    // On dessine en coordonnées CSS, même sur écran Retina / téléphone.
+    var newWidth = Math.round(cssWidth * dpr);
+    var newHeight = Math.round(cssHeight * dpr);
+
+    if (canvas.width !== newWidth || canvas.height !== newHeight) {
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+      canvas.style.width = cssWidth + 'px';
+      canvas.style.height = cssHeight + 'px';
+
+      if (oldData) {
+        var img = new Image();
+        img.onload = function() {
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          applyStyle();
+        };
+        img.src = oldData;
+      }
+    }
+    applyStyle();
+  }
+
+  function applyStyle() {
+    var dpr = window.devicePixelRatio || 1;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3.2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#1a1a2e';
-    ctx.fillStyle = '#1a1a2e';
+    ctx.strokeStyle = '#000000';
+    ctx.fillStyle = '#000000';
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
   }
 
   function getPos(e) {
     var r = canvas.getBoundingClientRect();
-
-    // Pointer Events : PC + tactile moderne
-    if (e.clientX !== undefined && e.clientY !== undefined) {
-      return {
-        x: e.clientX - r.left,
-        y: e.clientY - r.top
-      };
-    }
-
-    // Secours vieux navigateurs mobiles
-    var t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
-    if (t) {
-      return {
-        x: t.clientX - r.left,
-        y: t.clientY - r.top
-      };
-    }
-
-    return { x: 0, y: 0 };
+    var point = e;
+    if (e.touches && e.touches.length) point = e.touches[0];
+    else if (e.changedTouches && e.changedTouches.length) point = e.changedTouches[0];
+    return { x: point.clientX - r.left, y: point.clientY - r.top };
   }
 
   function startDraw(e) {
     if (e && e.preventDefault) e.preventDefault();
+    setupCanvas();
     drawing = true;
-
-    try {
-      if (canvas.setPointerCapture && e.pointerId !== undefined) {
-        canvas.setPointerCapture(e.pointerId);
-      }
-    } catch (err) {}
-
+    canvas.classList.add('signed');
+    try { if (canvas.setPointerCapture && e.pointerId !== undefined) canvas.setPointerCapture(e.pointerId); } catch (err) {}
     var p = getPos(e);
     lastX = p.x;
     lastY = p.y;
-
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 1.4, 0, Math.PI * 2);
+    ctx.arc(lastX, lastY, 2.5, 0, Math.PI * 2);
     ctx.fill();
-
-    canvas.classList.add('signed');
+    if (typeof updateAttestation === 'function') updateAttestation();
   }
 
   function draw(e) {
     if (!drawing) return;
     if (e && e.preventDefault) e.preventDefault();
-
+    applyStyle();
     var p = getPos(e);
-
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
-
     lastX = p.x;
     lastY = p.y;
-
-    canvas.classList.add('signed');
   }
 
   function endDraw(e) {
     if (e && e.preventDefault) e.preventDefault();
     drawing = false;
-
-    try {
-      if (canvas.releasePointerCapture && e.pointerId !== undefined) {
-        canvas.releasePointerCapture(e.pointerId);
-      }
-    } catch (err) {}
+    try { if (canvas.releasePointerCapture && e.pointerId !== undefined) canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+    canvas.classList.add('signed');
+    if (typeof updateAttestation === 'function') updateAttestation();
   }
 
-  resizeCanvas();
-
-  // Empêche le scroll/zoom pendant la signature sur mobile.
+  setupCanvas();
   canvas.style.touchAction = 'none';
   canvas.style.webkitUserSelect = 'none';
   canvas.style.userSelect = 'none';
+  canvas.style.background = '#ffffff';
 
-  if (window.PointerEvent) {
-    canvas.addEventListener('pointerdown', startDraw, { passive: false });
-    canvas.addEventListener('pointermove', draw, { passive: false });
-    canvas.addEventListener('pointerup', endDraw, { passive: false });
-    canvas.addEventListener('pointercancel', endDraw, { passive: false });
-    canvas.addEventListener('pointerleave', endDraw, { passive: false });
-  } else {
-    // Secours PC
-    canvas.addEventListener('mousedown', startDraw, { passive: false });
-    canvas.addEventListener('mousemove', draw, { passive: false });
-    canvas.addEventListener('mouseup', endDraw, { passive: false });
-    canvas.addEventListener('mouseleave', endDraw, { passive: false });
+  canvas.addEventListener('pointerdown', startDraw, { passive: false });
+  canvas.addEventListener('pointermove', draw, { passive: false });
+  canvas.addEventListener('pointerup', endDraw, { passive: false });
+  canvas.addEventListener('pointercancel', endDraw, { passive: false });
+  canvas.addEventListener('pointerleave', endDraw, { passive: false });
 
-    // Secours mobile ancien
-    canvas.addEventListener('touchstart', startDraw, { passive: false });
-    canvas.addEventListener('touchmove', draw, { passive: false });
-    canvas.addEventListener('touchend', endDraw, { passive: false });
-    canvas.addEventListener('touchcancel', endDraw, { passive: false });
-  }
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchmove', draw, { passive: false });
+  canvas.addEventListener('touchend', endDraw, { passive: false });
+  canvas.addEventListener('touchcancel', endDraw, { passive: false });
 
-  sigPads[canvasId] = { canvas: canvas, ctx: ctx, resize: resizeCanvas };
+  canvas.addEventListener('mousedown', startDraw, { passive: false });
+  canvas.addEventListener('mousemove', draw, { passive: false });
+  canvas.addEventListener('mouseup', endDraw, { passive: false });
+  canvas.addEventListener('mouseleave', endDraw, { passive: false });
+
+  sigPads[canvasId] = { canvas: canvas, ctx: ctx, resize: setupCanvas };
 }
 
 function clearSigPad(canvasId) {
